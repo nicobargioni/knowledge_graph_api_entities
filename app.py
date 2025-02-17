@@ -7,6 +7,7 @@ from datetime import datetime
 # 🔹 Configuración inicial
 st.set_page_config(page_title="Google Knowledge Graph Explorer", initial_sidebar_state="collapsed")
 
+# 🔹 Ocultar sidebar completamente
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] {display: none !important;}
@@ -24,24 +25,23 @@ def get_user_ip():
     
     return st.session_state["user_ip"]
 
-def update_db_structure():
-    """Actualizar la estructura de la base de datos para agregar ip_address si no existe"""
+def initialize_db():
+    """ Crea la base de datos y la tabla si no existen """
     conn = sqlite3.connect("search_logs.db")
     cursor = conn.cursor()
 
-    # Verificar las columnas existentes
-    cursor.execute("PRAGMA table_info(searches)")
-    columns = [col[1] for col in cursor.fetchall()]
-
-    if "ip_address" not in columns:
-        cursor.execute("ALTER TABLE searches ADD COLUMN ip_address TEXT")
-        conn.commit()
-    
+    # Crear la tabla si no existe
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        query TEXT NOT NULL,
+        language TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ip_address TEXT
+    )
+    """)
+    conn.commit()
     conn.close()
-
-# **Asegurar que se ejecute antes de cualquier consulta**
-update_db_structure()
-
 
 def log_search(query, language):
     """ Registra las búsquedas en SQLite """
@@ -50,19 +50,6 @@ def log_search(query, language):
 
     conn = sqlite3.connect("search_logs.db")
     cursor = conn.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS searches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query TEXT,
-            language TEXT,
-            ip_address TEXT,
-            timestamp TEXT
-        )
-    ''')
-
-    update_db_structure()
-
 
     cursor.execute("INSERT INTO searches (query, language, ip_address, timestamp) VALUES (?, ?, ?, ?)",
                    (query, language, ip_address, timestamp))
@@ -73,10 +60,6 @@ def log_search(query, language):
 def get_search_history():
     """ Obtiene el historial de búsquedas desde la base de datos """
     conn = sqlite3.connect("search_logs.db")
-    
-    # Asegurarse de que la columna ip_address existe
-    update_db_structure()
-
     df = pd.read_sql_query("SELECT id, query, language, ip_address, timestamp FROM searches ORDER BY timestamp DESC", conn)
     conn.close()
     return df
@@ -109,6 +92,9 @@ def get_knowledge_graph_entities(api_key, query, language, lang_label, limit=50)
         })
     
     return entities
+
+# ✅ **Asegurar que la base de datos esté inicializada**
+initialize_db()
 
 # ✅ **Acceso al Panel de Administrador**
 query_params = st.query_params
