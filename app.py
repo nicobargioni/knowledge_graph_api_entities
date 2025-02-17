@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import sqlite3
 from datetime import datetime
+import os
 
 # 🔹 Configuración inicial
 st.set_page_config(page_title="Google Knowledge Graph Explorer", initial_sidebar_state="collapsed")
@@ -120,8 +121,13 @@ if is_admin:
 # ✅ **Interfaz de Usuario**
 st.title("Google Knowledge Graph Explorer")
 
-api_key = st.text_input("API Key de Google Knowledge Graph", type="password")
-query = st.text_input("Consulta de búsqueda")
+# Obtener API Key desde las variables de entorno
+api_key = os.getenv("GOOGLE_KG_API_KEY")
+
+if not api_key:
+    st.error("⚠️ Error: No se encontró una API Key configurada.")
+
+query = st.text_input("Ingresar Keyword")
 
 # 🔹 Checkboxes para idiomas
 language_options = {
