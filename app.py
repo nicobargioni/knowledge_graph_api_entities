@@ -99,7 +99,7 @@ initialize_db()
 
 # ✅ **Acceso al Panel de Administrador**
 query_params = st.query_params
-is_admin = query_params.get("admin") == "nbseo"  # 🔴 Usa ?admin=nbseo en la URL
+is_admin = query_params.get("admin") == os.getenv("ADMIN_PASS")  # 🔴 Usa ?admin=nbseo en la URL
 
 if is_admin:
     st.title("📊 Panel de Administrador")
@@ -120,6 +120,19 @@ if is_admin:
 
 # ✅ **Interfaz de Usuario**
 st.title("Google Knowledge Graph Explorer")
+
+# 📝 Agregar descripción debajo del título
+st.write(
+    "🔍 Esta aplicación permite determinar si una keyword está reconocida como entidad en el Knowledge Graph de Google.\n\n"
+    "Ingresa una keyword y selecciona los idiomas en los que deseas realizar la búsqueda.\n\n"
+    "📖 **Las entidades relacionadas** son conceptos, personas, lugares u objetos "
+    "que Google reconoce y asocia en su base de datos semántica. Este enfoque ayuda "
+    "a comprender mejor el contexto de las búsquedas en lugar de depender solo de palabras clave.\n\n"
+    "🛠️ **Puedes utilizar esta información en datos estructurados** como Schema.org "
+    "para mejorar el SEO de tu sitio web, ayudando a los motores de búsqueda a "
+    "interpretar con mayor precisión el contenido y las relaciones entre diferentes temas."
+)
+
 
 # Obtener API Key desde las variables de entorno
 api_key = os.getenv("GOOGLE_KG_API_KEY")
