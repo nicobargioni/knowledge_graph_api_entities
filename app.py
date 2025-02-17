@@ -2,52 +2,55 @@ import streamlit as st
 import requests
 import pandas as pd
 import sqlite3
+from datetime import datetime
 
 # 🔹 Configuración inicial
 st.set_page_config(page_title="Google Knowledge Graph Explorer", initial_sidebar_state="collapsed")
 
-# 🔹 Función para conectar y registrar búsquedas en SQLite
+def get_user_ip():
+    """ Obtiene la IP pública del usuario """
+    if "user_ip" not in st.session_state:
+        try:
+            response = requests.get("https://api64.ipify.org?format=json")
+            st.session_state["user_ip"] = response.json().get("ip", "Desconocida")
+        except:
+            st.session_state["user_ip"] = "No disponible"
+    
+    return st.session_state["user_ip"]
+
 def log_search(query, language):
+    """ Registra las búsquedas en SQLite """
+    ip_address = get_user_ip()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     conn = sqlite3.connect("search_logs.db")
     cursor = conn.cursor()
-    
-    cursor.execute("""
+
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS searches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             query TEXT,
             language TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            ip_address TEXT,
+            timestamp TEXT
         )
-    """)
+    ''')
+
+    cursor.execute("INSERT INTO searches (query, language, ip_address, timestamp) VALUES (?, ?, ?, ?)",
+                   (query, language, ip_address, timestamp))
     
-    cursor.execute("INSERT INTO searches (query, language) VALUES (?, ?)", (query, language))
     conn.commit()
     conn.close()
 
-# 🔹 Función para obtener historial de búsquedas (para Admin)
 def get_search_history():
+    """ Obtiene el historial de búsquedas desde la base de datos """
     conn = sqlite3.connect("search_logs.db")
-    cursor = conn.cursor()
-    
-    # 🛠️ Crear la tabla si no existe
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS searches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            query TEXT,
-            language TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-
-    # 🔹 Intentar leer los datos después de asegurarnos de que la tabla existe
-    df = pd.read_sql_query("SELECT * FROM searches ORDER BY timestamp DESC", conn)
-    
+    df = pd.read_sql_query("SELECT id, query, language, ip_address, timestamp FROM searches ORDER BY timestamp DESC", conn)
     conn.close()
     return df
 
-# 🔹 Función para obtener entidades del Knowledge Graph
 def get_knowledge_graph_entities(api_key, query, language, lang_label, limit=50):
+    """ Consulta Google Knowledge Graph API """
     url = "https://kgsearch.googleapis.com/v1/entities:search"
     params = {
         "query": query,
@@ -75,14 +78,12 @@ def get_knowledge_graph_entities(api_key, query, language, lang_label, limit=50)
     
     return entities
 
-# ✅ **Verificar si es Admin accediendo con una URL secreta**
+# ✅ **Acceso al Panel de Administrador**
 query_params = st.query_params
-is_admin = query_params.get("nb_seo_admin") == "nbseo"  # 🔴 CAMBIA "clave_secreta"
+is_admin = query_params.get("admin") == "nbseo"  # 🔴 Usa ?admin=nbseo en la URL
 
-# ✅ **Si es Admin, muestra el panel de administrador**
 if is_admin:
     st.title("📊 Panel de Administrador")
-
     df_logs = get_search_history()
 
     if df_logs.empty:
@@ -91,44 +92,42 @@ if is_admin:
         st.write("### Historial de Búsquedas")
         st.dataframe(df_logs)
 
-    st.stop()  # Evita que se muestre el resto de la app
+        # 📊 Mostrar búsquedas por IP
+        st.write("### 🔍 Búsquedas por IP")
+        df_ip_counts = df_logs.groupby("ip_address").size().reset_index(name="Total Búsquedas")
+        st.dataframe(df_ip_counts)
 
-# ✅ **Si no es admin, muestra la app normal**
+    st.stop()  # Evita que se muestre la app normal
+
+# ✅ **Interfaz de Usuario**
 st.title("Google Knowledge Graph Explorer")
 
 api_key = st.text_input("API Key de Google Knowledge Graph", type="password")
 query = st.text_input("Consulta de búsqueda")
 
 # 🔹 Checkboxes para idiomas
-language_es = st.checkbox("Buscar en español", value=True)
-language_en = st.checkbox("Buscar en inglés", value=False)
-language_fr = st.checkbox("Buscar en francés", value=False)
-language_de = st.checkbox("Buscar en alemán", value=False)
-language_it = st.checkbox("Buscar en italiano", value=False)
+language_options = {
+    "Español": "es",
+    "Inglés": "en",
+    "Francés": "fr",
+    "Alemán": "de",
+    "Italiano": "it"
+}
+
+selected_languages = [lang for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
 
 results = []
 
 # ✅ **Botón de búsqueda**
-if st.button("Buscar"):
+if st.button("🔍 Buscar"):
     if not api_key or not query:
         st.warning("Por favor, ingrese una API Key y una consulta de búsqueda.")
     else:
         with st.spinner("Buscando entidades..."):
-            if language_es:
-                results.extend(get_knowledge_graph_entities(api_key, query, "es", "Español"))
-                log_search(query, "Español")
-            if language_en:
-                results.extend(get_knowledge_graph_entities(api_key, query, "en", "Inglés"))
-                log_search(query, "Inglés")
-            if language_fr:
-                results.extend(get_knowledge_graph_entities(api_key, query, "fr", "Francés"))
-                log_search(query, "Francés")
-            if language_de:
-                results.extend(get_knowledge_graph_entities(api_key, query, "de", "Alemán"))
-                log_search(query, "Alemán")
-            if language_it:
-                results.extend(get_knowledge_graph_entities(api_key, query, "it", "Italiano"))
-                log_search(query, "Italiano")
+            for lang, code in language_options.items():
+                if lang in selected_languages:
+                    results.extend(get_knowledge_graph_entities(api_key, query, code, lang))
+                    log_search(query, lang)
             
             if results:
                 df = pd.DataFrame(results)
