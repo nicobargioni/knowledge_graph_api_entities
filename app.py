@@ -7,6 +7,12 @@ from datetime import datetime
 # 🔹 Configuración inicial
 st.set_page_config(page_title="Google Knowledge Graph Explorer", initial_sidebar_state="collapsed")
 
+st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] {display: none !important;}
+    </style>
+""", unsafe_allow_html=True)
+
 def get_user_ip():
     """ Obtiene la IP pública del usuario """
     if "user_ip" not in st.session_state:
@@ -17,6 +23,25 @@ def get_user_ip():
             st.session_state["user_ip"] = "No disponible"
     
     return st.session_state["user_ip"]
+
+def update_db_structure():
+    """Actualizar la estructura de la base de datos para agregar ip_address si no existe"""
+    conn = sqlite3.connect("search_logs.db")
+    cursor = conn.cursor()
+
+    # Verificar las columnas existentes
+    cursor.execute("PRAGMA table_info(searches)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if "ip_address" not in columns:
+        cursor.execute("ALTER TABLE searches ADD COLUMN ip_address TEXT")
+        conn.commit()
+    
+    conn.close()
+
+# **Asegurar que se ejecute antes de cualquier consulta**
+update_db_structure()
+
 
 def log_search(query, language):
     """ Registra las búsquedas en SQLite """
@@ -36,6 +61,9 @@ def log_search(query, language):
         )
     ''')
 
+    update_db_structure()
+
+
     cursor.execute("INSERT INTO searches (query, language, ip_address, timestamp) VALUES (?, ?, ?, ?)",
                    (query, language, ip_address, timestamp))
     
@@ -45,6 +73,10 @@ def log_search(query, language):
 def get_search_history():
     """ Obtiene el historial de búsquedas desde la base de datos """
     conn = sqlite3.connect("search_logs.db")
+    
+    # Asegurarse de que la columna ip_address existe
+    update_db_structure()
+
     df = pd.read_sql_query("SELECT id, query, language, ip_address, timestamp FROM searches ORDER BY timestamp DESC", conn)
     conn.close()
     return df
