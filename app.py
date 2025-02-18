@@ -16,13 +16,6 @@ DATAFORSEO_USERNAME = st.secrets.get("DATAFORSEO_USERNAME", "")
 DATAFORSEO_PASSWORD = st.secrets.get("DATAFORSEO_PASSWORD", "")
 GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 
-# ✅ Cargar Location Codes (países)
-file_path = "/mnt/data/locations_serp_google_2024_11_05.csv"
-df_locations = pd.read_csv(file_path)
-df_countries = df_locations[df_locations["location_type"] == "Country"]
-country_location_codes = dict(zip(df_countries["location_name"], df_countries["location_code"]))
-
-
 # ✅ Capturar parámetros de la URL
 query_params = st.query_params.to_dict()
 admin_key = query_params.get("admin", [""])[0] if "admin" in query_params else ""
@@ -149,15 +142,14 @@ st.write("🔎 Ingresa una palabra clave para buscar información estructurada s
 # ✅ Entrada de búsqueda
 query = st.text_input("Ingresar Keyword")
 
-# ✅ Definir idiomas disponibles
+# ✅ Opciones de idioma
 language_options = {
     "Español": "es",
     "Inglés": "en",
     "Francés": "fr",
-    "Portugués": "pt",
+    "Alemán": "de",
     "Italiano": "it"
 }
-
 selected_languages = [code for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
 
 # ✅ Buscar en la API de Google Knowledge Graph
