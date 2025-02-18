@@ -7,7 +7,6 @@ import json
 import base64
 from client import RestClient  # ✅ Importar el cliente de DataForSEO
 
-
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
 
@@ -20,9 +19,7 @@ GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 # ✅ Capturar parámetros de la URL
 query_params = st.query_params.to_dict()
 admin_key = query_params.get("admin", [""])[0] if "admin" in query_params else ""
-related_key = query_params.get("related", [""])[0] if query_params else ""
-
-
+related_key = query_params.get("related", [""])[0] if "related" in query_params else ""
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
@@ -65,7 +62,6 @@ def get_all_search_history():
         return pd.DataFrame(columns=["query", "language", "timestamp"])
 
 # ✅ Función para obtener "People Also Search For" de DataForSEO
-
 def get_people_also_search_for(keyword):
     """Consulta a la API de DataForSEO para obtener 'People Also Search For'."""
     try:
@@ -87,9 +83,6 @@ def get_people_also_search_for(keyword):
         # 🔹 Hacer la solicitud
         response = client.post("/v3/serp/google/organic/live/advanced", post_data)
 
-        # 🔹 Mostrar la respuesta en Streamlit para depuración
-        st.write(response)
-
         # 🔹 Manejo de errores
         if response["status_code"] != 20000:
             st.error(f"❌ Error en la API: {response['status_code']} - {response['status_message']}")
@@ -103,9 +96,8 @@ def get_people_also_search_for(keyword):
             for result in results:
                 items = result.get("items", [])
                 for item in items:
-                    # ✅ Si el item es de tipo "people_also_search", extraer sus términos
                     if item.get("type") == "people_also_search" and "items" in item:
-                        related_searches.extend(item["items"])  # Extrae la lista de términos
+                        related_searches.extend(item["items"])
 
         return related_searches
 
@@ -113,9 +105,7 @@ def get_people_also_search_for(keyword):
         st.error(f"❌ Error en la solicitud: {e}")
         return []
 
-
-
-# 🔹 **Si accedes con `?admin=nbseo`, mostrar el Panel de Administrador**
+# 🔹 **Panel de Administrador si accedes con `?admin=nbseo`**
 if admin_key == ADMIN_PASS:
     st.title("🔐 Panel de Administrador")
 
@@ -128,7 +118,7 @@ if admin_key == ADMIN_PASS:
 
     st.stop()  # Para evitar que el resto de la app se ejecute
 
-# 🔹 **Si accedes con `?related=1`, mostrar People Also Search For**
+# 🔹 **Si accedes con `?related=1`, mostrar "People Also Search For"**
 elif related_key == "1":
     st.title("🔍 People Also Search For")
     keyword = st.text_input("Ingresar Keyword")
@@ -137,9 +127,9 @@ elif related_key == "1":
         with st.spinner("Obteniendo términos relacionados..."):
             results = get_people_also_search_for(keyword)
             if results:
-                st.write("### Resultados:")
-                for term in results:
-                    st.write(f"- {term}")
+                # ✅ Mostrar en una tabla en lugar de una lista desordenada
+                df = pd.DataFrame({"Términos relacionados": results})
+                st.dataframe(df)
             else:
                 st.warning("⚠ No se encontraron términos relacionados.")
 
@@ -162,7 +152,7 @@ language_options = {
 }
 selected_languages = [code for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
 
-# ✅ Buscar en la API
+# ✅ Buscar en la API de Google Knowledge Graph
 if st.button("🔍 Buscar") and query:
     with st.spinner("Buscando entidades..."):
         results = []
@@ -172,7 +162,7 @@ if st.button("🔍 Buscar") and query:
 
             try:
                 response = requests.get(url, params=params)
-                response.raise_for_status()  # ✅ Verificar si la API responde correctamente
+                response.raise_for_status()
 
                 data = response.json()
                 for item in data.get("itemListElement", []):
@@ -191,7 +181,7 @@ if st.button("🔍 Buscar") and query:
             except requests.exceptions.RequestException as e:
                 st.error(f"❌ Error al conectar con la API: {e}")
 
-        # ✅ Mostrar resultados
+        # ✅ Mostrar resultados en tabla
         if results:
             st.write("### Resultados")
             st.dataframe(pd.DataFrame(results))
