@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -9,14 +10,15 @@ import base64
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
 
 # ✅ Obtener claves API desde Streamlit Secrets
-ADMIN_PASS = st.secrets["ADMIN_PASS"]
-DATAFORSEO_USERNAME = st.secrets["DATAFORSEO_USERNAME"]
-DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
+ADMIN_PASS = st.secrets.get("ADMIN_PASS", "")
+DATAFORSEO_USERNAME = st.secrets.get("DATAFORSEO_USERNAME", "")
+DATAFORSEO_PASSWORD = st.secrets.get("DATAFORSEO_PASSWORD", "")
+GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 
-# ✅ Capturar parámetros de la URL correctamente
+# ✅ Capturar parámetros de la URL
 query_params = st.query_params
-admin_key = query_params.get("admin", "")
-related_key = query_params.get("related", "")
+admin_key = query_params.get("admin", [""])[0] if query_params else ""
+related_key = query_params.get("related", [""])[0] if query_params else ""
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
@@ -51,6 +53,10 @@ def get_all_search_history():
 def get_people_also_search_for(keyword):
     """Consulta a la API de DataForSEO para obtener 'People Also Search For'."""
     try:
+        if not DATAFORSEO_USERNAME or not DATAFORSEO_PASSWORD:
+            st.error("❌ No se encontraron credenciales de DataForSEO.")
+            return []
+
         # 🔹 Configurar autenticación en Base64
         credentials = f"{DATAFORSEO_USERNAME}:{DATAFORSEO_PASSWORD}"
         encoded_credentials = base64.b64encode(credentials.encode()).decode()
@@ -106,8 +112,8 @@ if str(admin_key).strip() == str(ADMIN_PASS).strip():
 
     st.stop()  # Para evitar que el resto de la app se ejecute
 
-# 🔹 **Si accedes con `?related=true`, mostrar People Also Search For**
-elif related_key.lower() == "true":
+# 🔹 **Si accedes con `?related=1`, mostrar People Also Search For**
+elif related_key == "1":
     st.title("🔍 People Also Search For")
     keyword = st.text_input("Ingresar Keyword")
 
@@ -123,7 +129,7 @@ elif related_key.lower() == "true":
 
     st.stop()
 
-# 🔹 **Si no hay `?admin=...` ni `?related=true`, mostrar el buscador normal**
+# 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
 st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.")
 
@@ -146,7 +152,7 @@ if st.button("🔍 Buscar") and query:
         results = []
         for lang_code in selected_languages:
             url = "https://kgsearch.googleapis.com/v1/entities:search"
-            params = {"query": query, "limit": 50, "key": st.secrets["GOOGLE_KG_API_KEY"], "languages": lang_code}
+            params = {"query": query, "limit": 50, "key": GOOGLE_KG_API_KEY, "languages": lang_code}
 
             try:
                 response = requests.get(url, params=params)
