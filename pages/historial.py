@@ -50,7 +50,7 @@ else:
     st.title("📖 Tu Historial de Búsquedas")
 
     user_logs = get_user_search_history()
-    if user_logs.empty:
+    if user_logs.empty():
         st.warning("⚠ No tienes búsquedas recientes o no se pudo conectar a la base de datos.")
     else:
         st.dataframe(user_logs)
