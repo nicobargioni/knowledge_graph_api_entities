@@ -1,36 +1,48 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import os
 
-# Ocultar esta página del menú de Streamlit
-st.set_page_config(page_title="Panel de Administrador", page_icon="📊", layout="wide")
+# ✅ Configurar la página
+st.set_page_config(page_title="Historial de Búsquedas", page_icon="📖", layout="wide")
 
+# ✅ Obtener clave de admin desde Streamlit Secrets
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-# Obtener parámetros de la URL
+# ✅ Obtener parámetros de la URL
 query_params = st.query_params
 admin_key = query_params.get("admin", [""])[0]
 
-# Si la clave en la URL no coincide, denegar acceso
-if admin_key != ADMIN_PASS:
-    st.warning("⚠ Acceso denegado. No tienes permisos para ver esta página.")
-    st.stop()
-
-# Función para obtener historial de búsquedas
-def get_search_history():
+# ✅ Función para obtener TODAS las búsquedas (solo para admin)
+def get_all_search_history():
     conn = sqlite3.connect("search_logs.db")
     df = pd.read_sql_query("SELECT * FROM searches ORDER BY timestamp DESC", conn)
     conn.close()
     return df
 
-# 🌟 Panel de Administración
-st.markdown("<h1 style='text-align: center;'>📊 Panel de Administrador</h1>", unsafe_allow_html=True)
+# ✅ Función para obtener el historial del usuario
+def get_user_search_history():
+    conn = sqlite3.connect("search_logs.db")
+    df = pd.read_sql_query("SELECT query, language, timestamp FROM searches ORDER BY timestamp DESC LIMIT 20", conn)
+    conn.close()
+    return df
 
-df_logs = get_search_history()
+# 🔐 Verificar si es admin
+if admin_key == ADMIN_PASS:
+    st.title("🔐 Panel de Administrador")
+    
+    df_logs = get_all_search_history()
+    if df_logs.empty:
+        st.warning("⚠ No hay registros en la base de datos.")
+    else:
+        st.write("## 📜 Historial de Todas las Búsquedas")
+        st.dataframe(df_logs)
 
-if df_logs.empty:
-    st.warning("⚠ No hay registros en la base de datos.")
+# 📖 Si no es admin, mostrar solo su historial
 else:
-    st.write("## 📜 Historial de Búsquedas")
-    st.dataframe(df_logs)
+    st.title("📖 Tu Historial de Búsquedas")
+
+    user_logs = get_user_search_history()
+    if user_logs.empty:
+        st.warning("⚠ No tienes búsquedas recientes.")
+    else:
+        st.dataframe(user_logs)
