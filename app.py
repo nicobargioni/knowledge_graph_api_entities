@@ -139,7 +139,10 @@ elif related_key == "1":
 
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
-st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.")
+st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.\n\n"
+         "Google Knowledge Graph es una base de datos de entidades del mundo real, como personas, lugares y productos, que ayuda a comprender mejor el significado **semántico** de las búsquedas.\n\n"
+         "Cada entidad tiene un **score** que indica su relevancia respecto a la keyword buscada.\n\n"
+         "Los datos obtenidos aquí pueden utilizarse para reforzar interlinking y optimizar datos estructurados.")
 
 # ✅ Entrada de búsqueda
 query = st.text_input("Ingresar Keyword")
@@ -189,3 +192,21 @@ if st.button("🔍 Buscar") and query:
             st.dataframe(pd.DataFrame(results))
         else:
             st.warning("⚠ No se encontraron entidades relacionadas.")
+
+footer = """
+<style>
+    .footer {
+        position: fixed;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        font-size: 14px;
+        color: gray;
+    }
+</style>
+<div class="footer">
+    Nicolás Bargioni | SEO Specialist
+</div>
+"""
+
+st.markdown(footer, unsafe_allow_html=True)
