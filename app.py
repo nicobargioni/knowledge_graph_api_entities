@@ -53,7 +53,7 @@ def save_search(query, language):
 def get_all_search_history():
     try:
         conn = sqlite3.connect("search_logs.db")
-        df = pd.read_sql_query("SELECT * FROM searches ORDER BY timestamp DESC", conn)
+        df = pd.read_sql_query("SELECT * FROM searches ORDER BY timestamp DESC LIMIT 50", conn)
         conn.close()
         return df if not df.empty else pd.DataFrame(columns=["query", "language", "timestamp"])
     except Exception as e:
@@ -111,7 +111,7 @@ def get_people_also_search_for(keyword):
         return []
 
 # 🔹 **Si accedes con `?admin=nbseo`, mostrar el Panel de Administrador**
-if str(admin_key).strip() == str(ADMIN_PASS).strip():
+if admin_key == ADMIN_PASS:
     st.title("🔐 Panel de Administrador")
 
     df_logs = get_all_search_history()
