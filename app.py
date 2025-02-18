@@ -82,7 +82,7 @@ def get_people_also_search_for(keyword):
         url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
 
         # 🔹 Parámetros de la consulta
-        payload = [{"keyword": keyword, "location_code": 2840, "language_code": "en", "device": "desktop"}]
+        payload = [{"keyword": keyword, "location_code": 2840, "language_code": "es", "device": "desktop"}]
 
         # 🔹 Realizar la solicitud
         response = requests.post(url, headers=headers, json=payload)
