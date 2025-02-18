@@ -157,6 +157,9 @@ Cada entidad tiene un **📈 *score*** que indica su **relevancia** respecto a l
 🔹 **Análisis de tendencias:** Se puede descubrir qué entidades están más relacionadas con una keyword en un momento determinado.  
 
 ---
+
+### 😺 Pro tip:
+✅ Las combinaciones de idiomas pueden dar resultados interesantes. Una entidad puede ser más popular en un idioma que en otro.
 """)
 
 # ✅ Entrada de búsqueda
