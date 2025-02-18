@@ -30,10 +30,11 @@ def get_user_search_history():
         conn = sqlite3.connect("search_logs.db")
         df = pd.read_sql_query("SELECT query, language, timestamp FROM searches ORDER BY timestamp DESC LIMIT 20", conn)
         conn.close()
-        return df
+        return df if not df.empty else pd.DataFrame(columns=["query", "language", "timestamp"])
     except Exception as e:
         st.error(f"❌ Error al acceder a la base de datos: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(columns=["query", "language", "timestamp"])  # Asegura que siempre sea un DataFrame
+
 
 # 🔐 Verificar si es admin
 if admin_key == ADMIN_PASS:
@@ -51,7 +52,7 @@ else:
     st.title("📖 Tu Historial de Búsquedas")
 
     user_logs = get_user_search_history()
-    if user_logs.empty():
+    if user_logs.empty:
         st.warning("⚠ No tienes búsquedas recientes o no se pudo conectar a la base de datos.")
     else:
         st.dataframe(user_logs)
