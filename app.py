@@ -12,6 +12,8 @@ ADMIN_PASS = st.secrets["ADMIN_PASS"]
 # ✅ Obtener parámetros de la URL
 query_params = st.query_params
 admin_key = query_params.get("admin", [""])[0] if query_params else ""
+st.write(f"🔍 Debug: admin_key = {admin_key}")
+
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
