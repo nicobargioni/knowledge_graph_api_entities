@@ -1,164 +1,118 @@
 import streamlit as st
 import requests
 import pandas as pd
+import sqlite3
 import os
-import json
-import webbrowser
+from datetime import datetime
+import streamlit as st
 
-# 🔹 Configuración de Google OAuth
-CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-REDIRECT_URI = "https://knowledge-graph-api-entities.streamlit.app/"
 
-creds = os.getenv("FIREBASE_CREDENTIALS")
+# ✅ Configurar la página para ocultar el sidebar
+st.set_page_config(layout="wide")
 
-if creds:
-    creds_dict = json.loads(creds)
-    print("✅ Credenciales cargadas correctamente")
-else:
-    print("❌ ERROR: No se encontraron credenciales")
+API_KEY = st.secrets["GOOGLE_KG_API_KEY"]
+ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-# Cargar las credenciales desde la variable de entorno
-firebase_credentials = os.getenv("FIREBASE_CREDENTIALS")
 
-if firebase_credentials:
-    creds_dict = json.loads(firebase_credentials)
-    print("Credenciales cargadas correctamente")
-else:
-    print("Error: No se encontraron credenciales")
-
-# 🔹 Ocultar el menú lateral por completo
-st.markdown(
-    """
-    <style>
-        [data-testid="stSidebarNav"] {
-            display: none !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# ✅ Validación de configuración
-if not CLIENT_ID or not CLIENT_SECRET:
-    st.error("⚠️ CLIENT_ID o CLIENT_SECRET no están configurados.")
+if not API_KEY:
+    st.error("⚠️ No se encontró la API Key. Asegúrate de definir GOOGLE_KG_API_KEY como variable de entorno.")
     st.stop()
 
-# 🔹 Función para generar URL de autenticación con Google
-def login_with_google():
-    return f"https://accounts.google.com/o/oauth2/auth?" \
-           f"client_id={CLIENT_ID}" \
-           f"&redirect_uri={REDIRECT_URI}" \
-           f"&response_type=code" \
-           f"&scope=openid email profile" \
-           f"&access_type=offline" \
-           f"&prompt=consent"
+# ✅ Inicializar la base de datos SQLite
+def initialize_db():
+    conn = sqlite3.connect("search_logs.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        query TEXT NOT NULL,
+        language TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    conn.commit()
+    conn.close()
 
-# 🔹 Interfaz de autenticación
-st.title("🔑 Autenticación con Google")
+initialize_db()
 
-if "user" not in st.session_state:
-    if st.button("🔑 Iniciar sesión con Google"):
-        auth_url = login_with_google()
-        st.write("🔍 URL de autenticación generada:", auth_url)
+# ✅ Guardar búsqueda en la base de datos
+def save_search(query, language):
+    conn = sqlite3.connect("search_logs.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO searches (query, language) VALUES (?, ?)", (query, language))
+    conn.commit()
+    conn.close()
 
-        webbrowser.open_new(auth_url)  # 🔹 Abre la URL de autenticación en una nueva ventana
-        st.stop()
-else:
-    st.success(f"✅ Bienvenido {st.session_state['user']['name']}")
-    if st.session_state["user"]["picture"]:
-        st.image(st.session_state["user"]["picture"], width=100)
-
-# 🔹 Verificar si se recibió un código de autenticación en la URL
+# ✅ Pestañas de la aplicación
 query_params = st.query_params
-auth_code = query_params.get("code")
+is_admin = query_params.get("admin", [""])[0]
 
-if auth_code:
-    token_url = "https://oauth2.googleapis.com/token"
-    token_data = {
-        "code": auth_code,
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "redirect_uri": REDIRECT_URI,
-        "grant_type": "authorization_code"
+# 🔹 Página principal (Explorador)
+def explorador():
+    st.title("🔍 Google Knowledge Graph Explorer")
+    st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades, conceptos y personas en la base de conocimiento de Google.")
+
+    query = st.text_input("Ingresar Keyword")
+
+    language_options = {
+        "Español": "es",
+        "Inglés": "en",
+        "Francés": "fr",
+        "Alemán": "de",
+        "Italiano": "it"
     }
 
-    response = requests.post(token_url, data=token_data)
-    token_info = response.json()
+    selected_languages = [code for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
 
-    if "access_token" in token_info:
-        access_token = token_info["access_token"]
-
-        # 🔹 Obtener datos del usuario
-        user_info_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        user_response = requests.get(user_info_url, headers=headers)
-        user_info = user_response.json()
-
-        # ✅ Guardar datos en session_state
-        st.session_state["user"] = {
-            "name": user_info.get("name", "Usuario desconocido"),
-            "email": user_info.get("email", "Correo no disponible"),
-            "picture": user_info.get("picture"),
-        }
-
-        # 🔹 Cerrar la ventana de autenticación
-        st.markdown('<script>window.close();</script>', unsafe_allow_html=True)
-        st.rerun()
-    else:
-        st.error("No se pudo obtener el Access Token. Intenta de nuevo.")
-
-# ✅ **Interfaz de Usuario**
-st.title("Google Knowledge Graph Explorer")
-st.write("🔍 Ingresa una keyword para buscar en Google Knowledge Graph.")
-
-# 🔹 Obtener API Key desde variables de entorno
-api_key = os.getenv("GOOGLE_KG_API_KEY")
-
-if not api_key:
-    st.error("⚠️ Error: No se encontró una API Key configurada.")
-
-query = st.text_input("Ingresar Keyword")
-
-# 🔹 Checkboxes para idiomas
-language_options = {
-    "Español": "es",
-    "Inglés": "en",
-    "Francés": "fr",
-    "Alemán": "de",
-    "Italiano": "it"
-}
-
-selected_languages = [lang for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
-
-results = []
-
-# ✅ **Botón de búsqueda**
-if st.button("🔍 Buscar"):
-    if not api_key or not query:
-        st.warning("Por favor, ingrese una API Key y una consulta de búsqueda.")
-    else:
+    if st.button("🔍 Buscar") and query:
         with st.spinner("Buscando entidades..."):
-            for lang, code in language_options.items():
-                if lang in selected_languages:
-                    url = "https://kgsearch.googleapis.com/v1/entities:search"
-                    params = {"query": query, "limit": 50, "key": api_key, "languages": code}
-                    response = requests.get(url, params=params)
-                    if response.status_code == 200:
-                        data = response.json()
-                        for item in data.get("itemListElement", []):
-                            entity = item.get("result", {})
-                            results.append({
-                                "Nombre": entity.get("name", "N/A"),
-                                "Tipo": ", ".join(entity.get("@type", [])),
-                                "Descripción": entity.get("description", "N/A"),
-                                "Score": item.get("resultScore", 0),
-                                "Idioma": lang
-                            })
+            results = []
+            for lang_code in selected_languages:
+                url = "https://kgsearch.googleapis.com/v1/entities:search"
+                params = {"query": query, "limit": 50, "key": API_KEY, "languages": lang_code}
+                response = requests.get(url, params=params)
+                if response.status_code == 200:
+                    data = response.json()
+                    for item in data.get("itemListElement", []):
+                        entity = item.get("result", {})
+                        results.append({
+                            "Nombre": entity.get("name", "N/A"),
+                            "Tipo": ", ".join(entity.get("@type", [])),
+                            "Descripción": entity.get("description", "N/A"),
+                            "Score": item.get("resultScore", 0),
+                            "Idioma": lang_code
+                        })
+                    
+                    # 🔹 Guardar búsqueda en la base de datos
+                    save_search(query, lang_code)
 
             if results:
-                df = pd.DataFrame(results)
                 st.write("### Resultados")
-                st.dataframe(df)
+                st.dataframe(pd.DataFrame(results))
             else:
                 st.warning("No se encontraron entidades relacionadas.")
+
+# 🔹 Panel de administración (solo accesible con clave)
+def admin():
+    st.title("📊 Panel de Administrador")
+    st.write("Aquí puedes ver todas las búsquedas realizadas por los usuarios.")
+
+    conn = sqlite3.connect("search_logs.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT query, language, timestamp FROM searches ORDER BY timestamp DESC")
+    searches = cursor.fetchall()
+
+    if searches:
+        df = pd.DataFrame(searches, columns=["Query", "Idioma", "Fecha"])
+        st.dataframe(df)
+    else:
+        st.warning("No hay búsquedas registradas.")
+
+    conn.close()
+
+# 🔹 Control de acceso: Admin o Explorador
+if is_admin == ADMIN_PASS:
+    admin()
+else:
+    explorador()
