@@ -10,6 +10,23 @@ CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = "https://knowledge-graph-api-entities.streamlit.app/"
 
+creds = os.getenv("FIREBASE_CREDENTIALS")
+
+if creds:
+    creds_dict = json.loads(creds)
+    print("✅ Credenciales cargadas correctamente")
+else:
+    print("❌ ERROR: No se encontraron credenciales")
+
+# Cargar las credenciales desde la variable de entorno
+firebase_credentials = os.getenv("FIREBASE_CREDENTIALS")
+
+if firebase_credentials:
+    creds_dict = json.loads(firebase_credentials)
+    print("Credenciales cargadas correctamente")
+else:
+    print("Error: No se encontraron credenciales")
+
 # 🔹 Ocultar el menú lateral por completo
 st.markdown(
     """
