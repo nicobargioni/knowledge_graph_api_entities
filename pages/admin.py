@@ -8,8 +8,8 @@ st.set_page_config(page_title="Historial de Búsquedas", page_icon="📖", layou
 # ✅ Obtener clave de admin desde Streamlit Secrets
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-# ✅ Obtener parámetros de la URL
-query_params = st.query_params
+# ✅ Obtener parámetros de la URL (usando método correcto)
+query_params = st.experimental_get_query_params()
 admin_key = query_params.get("admin", [""])[0]
 
 # ✅ Función para obtener TODAS las búsquedas (solo para admin)
@@ -29,7 +29,7 @@ def get_user_search_history():
 # 🔐 Verificar si es admin
 if admin_key == ADMIN_PASS:
     st.title("🔐 Panel de Administrador")
-    
+
     df_logs = get_all_search_history()
     if df_logs.empty:
         st.warning("⚠ No hay registros en la base de datos.")
