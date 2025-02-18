@@ -18,8 +18,8 @@ GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 
 # ✅ Capturar parámetros de la URL
 query_params = st.query_params.to_dict()
-admin_key = query_params.get("admin", [""])[0] if "admin" in query_params else ""
-related_key = query_params.get("related", [""])[0] if "related" in query_params else ""
+admin_key = str(query_params.get("admin", [""])[0])  # Asegurar que sea string
+related_key = str(query_params.get("related", [""])[0])  # Asegurar que sea string
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
