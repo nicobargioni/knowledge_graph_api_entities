@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import requests
+import urllib
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
@@ -10,8 +11,15 @@ st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
 # ✅ Obtener parámetros de la URL
-query_params = st.query_params
-admin_key = query_params.get("admin", [""])[0] if query_params else ""
+query_string = st.query_params.to_dict()
+admin_key = query_string.get("admin", "")
+
+# Si admin_key sigue vacío, intenta leerlo directamente desde la URL completa
+if not admin_key:
+    parsed_url = urllib.parse.urlparse(st.experimental_get_query_params())
+    query_params_dict = urllib.parse.parse_qs(parsed_url.query)
+    admin_key = query_params_dict.get("admin", [""])[0]
+
 st.write(f"🔍 Debug: admin_key = {admin_key}")
 
 
@@ -56,7 +64,7 @@ def get_all_search_history():
         return pd.DataFrame(columns=["query", "language", "timestamp"])  # Retorna un DataFrame vacío en caso de error
 
 # 🔐 Si accedes con `?admin=clave`, muestra el Panel de Administrador
-if admin_key == ADMIN_PASS:
+if str(admin_key).strip() == str(ADMIN_PASS).strip():
     st.title("🔐 Panel de Administrador")
 
     df_logs = get_all_search_history()
