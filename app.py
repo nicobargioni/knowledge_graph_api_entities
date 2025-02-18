@@ -1,22 +1,19 @@
 import streamlit as st
-import requests
-import pandas as pd
 import sqlite3
-from datetime import datetime
-import os
-
+import pandas as pd
+import requests
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
 
-# ✅ Obtener credenciales
-API_KEY = st.secrets["GOOGLE_KG_API_KEY"]
+# ✅ Obtener clave de admin desde Streamlit Secrets
+ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-if not API_KEY:
-    st.error("⚠️ No se encontró la API Key. Asegúrate de definir GOOGLE_KG_API_KEY en los secretos.")
-    st.stop()
+# ✅ Obtener parámetros de la URL
+query_params = st.query_params
+admin_key = query_params.get("admin", [""])[0] if query_params else ""
 
-# ✅ Inicializar base de datos
+# ✅ Función para inicializar la base de datos
 def initialize_db():
     conn = sqlite3.connect("search_logs.db")
     cursor = conn.cursor()
@@ -31,26 +28,52 @@ def initialize_db():
     conn.commit()
     conn.close()
 
+# ✅ Asegurar que la base de datos exista
 initialize_db()
 
-# ✅ Verificar si la base de datos existe, si no, crearla
-if not os.path.exists("search_logs.db"):
-    initialize_db()
-
-# ✅ Guardar búsqueda en la base de datos
+# ✅ Función para guardar una búsqueda en la base de datos
 def save_search(query, language):
-    conn = sqlite3.connect("search_logs.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO searches (query, language) VALUES (?, ?)", (query, language))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect("search_logs.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO searches (query, language) VALUES (?, ?)", (query, language))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"❌ Error al guardar la búsqueda: {e}")
 
-# 🔹 Página principal con buscador
+# ✅ Función para obtener TODAS las búsquedas (solo para admin)
+def get_all_search_history():
+    try:
+        conn = sqlite3.connect("search_logs.db")
+        df = pd.read_sql_query("SELECT * FROM searches ORDER BY timestamp DESC", conn)
+        conn.close()
+        return df if not df.empty else pd.DataFrame(columns=["query", "language", "timestamp"])
+    except Exception as e:
+        st.error(f"❌ Error al acceder a la base de datos: {e}")
+        return pd.DataFrame(columns=["query", "language", "timestamp"])  # Retorna un DataFrame vacío en caso de error
+
+# 🔐 Si accedes con `?admin=clave`, muestra el Panel de Administrador
+if admin_key == ADMIN_PASS:
+    st.title("🔐 Panel de Administrador")
+
+    df_logs = get_all_search_history()
+    if df_logs.empty:
+        st.warning("⚠ No hay registros en la base de datos.")
+    else:
+        st.write("## 📜 Historial de Todas las Búsquedas")
+        st.dataframe(df_logs)
+
+    st.stop()  # Para evitar que el resto de la app se ejecute
+
+# 🔍 Si no es admin, mostrar la app normal con el buscador
 st.title("🔍 Google Knowledge Graph Explorer")
-st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades, conceptos y personas en la base de conocimiento de Google.")
+st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.")
 
+# ✅ Entrada de búsqueda
 query = st.text_input("Ingresar Keyword")
 
+# ✅ Opciones de idioma
 language_options = {
     "Español": "es",
     "Inglés": "en",
@@ -58,16 +81,17 @@ language_options = {
     "Alemán": "de",
     "Italiano": "it"
 }
-
 selected_languages = [code for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
 
+# ✅ Buscar en la API
 if st.button("🔍 Buscar") and query:
     with st.spinner("Buscando entidades..."):
         results = []
         for lang_code in selected_languages:
             url = "https://kgsearch.googleapis.com/v1/entities:search"
-            params = {"query": query, "limit": 50, "key": API_KEY, "languages": lang_code}
+            params = {"query": query, "limit": 50, "key": st.secrets["GOOGLE_KG_API_KEY"], "languages": lang_code}
             response = requests.get(url, params=params)
+
             if response.status_code == 200:
                 data = response.json()
                 for item in data.get("itemListElement", []):
@@ -80,11 +104,12 @@ if st.button("🔍 Buscar") and query:
                         "Idioma": lang_code
                     })
 
-                # 🔹 Guardar búsqueda en la base de datos
+                # ✅ Guardar búsqueda en la base de datos
                 save_search(query, lang_code)
 
+        # ✅ Mostrar resultados
         if results:
             st.write("### Resultados")
             st.dataframe(pd.DataFrame(results))
         else:
-            st.warning("No se encontraron entidades relacionadas.")
+            st.warning("⚠ No se encontraron entidades relacionadas.")
