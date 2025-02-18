@@ -5,6 +5,9 @@ import pandas as pd
 import requests
 import json
 import base64
+from client import RestClient  # ✅ Importar el cliente de DataForSEO
+
+
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
 
@@ -62,6 +65,7 @@ def get_all_search_history():
         return pd.DataFrame(columns=["query", "language", "timestamp"])
 
 # ✅ Función para obtener "People Also Search For" de DataForSEO
+
 def get_people_also_search_for(keyword):
     """Consulta a la API de DataForSEO para obtener 'People Also Search For'."""
     try:
@@ -69,35 +73,31 @@ def get_people_also_search_for(keyword):
             st.error("❌ No se encontraron credenciales de DataForSEO.")
             return []
 
-        # 🔹 Configurar autenticación en Base64
-        credentials = f"{DATAFORSEO_USERNAME}:{DATAFORSEO_PASSWORD}"
-        encoded_credentials = base64.b64encode(credentials.encode()).decode()
-
-        # 🔹 Headers de la petición
-        headers = {
-            "Authorization": f"Basic {encoded_credentials}",
-            "Content-Type": "application/json"
-        }
-
-        # 🔹 Endpoint de DataForSEO
-        url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
+        # 🔹 Configurar cliente de DataForSEO
+        client = RestClient(DATAFORSEO_USERNAME, DATAFORSEO_PASSWORD)
 
         # 🔹 Parámetros de la consulta
-        payload = [{"keyword": keyword, "location_code": 2840, "language_code": "es", "device": "desktop"}]
+        post_data = [{
+            "keyword": keyword,
+            "location_code": 2840,
+            "language_code": "es",
+            "device": "desktop"
+        }]
 
-        # 🔹 Realizar la solicitud
-        response = requests.post(url, headers=headers, json=payload)
+        # 🔹 Hacer la solicitud
+        response = client.post("/v3/serp/google/organic/live/advanced", post_data)
+
+        # 🔹 Mostrar la respuesta en Streamlit para depuración
+        st.write(response)
 
         # 🔹 Manejo de errores
-        if response.status_code != 200:
-            st.error(f"❌ Error en la API: {response.status_code} - {response.text}")
+        if response["status_code"] != 20000:
+            st.error(f"❌ Error en la API: {response['status_code']} - {response['status_message']}")
             return []
 
         # 🔹 Extraer datos
-        data = response.json()
         related_searches = []
-        
-        results = data.get("tasks", [])[0].get("result", [])
+        results = response.get("tasks", [])[0].get("result", [])
         for result in results:
             if "items" in result:
                 for item in result["items"]:
@@ -110,8 +110,6 @@ def get_people_also_search_for(keyword):
     except Exception as e:
         st.error(f"❌ Error en la solicitud: {e}")
         return []
-    
-st.write(f"admin_key capturado: {admin_key}")
 
 
 # 🔹 **Si accedes con `?admin=nbseo`, mostrar el Panel de Administrador**
