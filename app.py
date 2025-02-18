@@ -16,6 +16,21 @@ DATAFORSEO_USERNAME = st.secrets.get("DATAFORSEO_USERNAME", "")
 DATAFORSEO_PASSWORD = st.secrets.get("DATAFORSEO_PASSWORD", "")
 GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 
+# ✅ Cargar Location Codes (países)
+file_path = "/mnt/data/locations_serp_google_2024_11_05.csv"
+df_locations = pd.read_csv(file_path)
+df_countries = df_locations[df_locations["location_type"] == "Country"]
+country_location_codes = dict(zip(df_countries["location_name"], df_countries["location_code"]))
+
+# ✅ Definir idiomas disponibles
+language_options = {
+    "Español": "es",
+    "Inglés": "en",
+    "Francés": "fr",
+    "Portugués": "pt",
+    "Italiano": "it"
+}
+
 # ✅ Capturar parámetros de la URL
 query_params = st.query_params.to_dict()
 admin_key = query_params.get("admin", [""])[0] if "admin" in query_params else ""
@@ -62,8 +77,8 @@ def get_all_search_history():
         return pd.DataFrame(columns=["query", "language", "timestamp"])
 
 # ✅ Función para obtener "People Also Search For" de DataForSEO
-def get_people_also_search_for(keyword):
-    """Consulta a la API de DataForSEO para obtener 'People Also Search For'."""
+def get_people_also_search_for(keyword, location_code, language_code):
+    """Consulta a la API de DataForSEO para obtener 'People Also Search For' con país e idioma personalizados."""
     try:
         if not DATAFORSEO_USERNAME or not DATAFORSEO_PASSWORD:
             st.error("❌ No se encontraron credenciales de DataForSEO.")
@@ -75,8 +90,8 @@ def get_people_also_search_for(keyword):
         # 🔹 Parámetros de la consulta
         post_data = [{
             "keyword": keyword,
-            "location_code": 2840,
-            "language_code": "es",
+            "location_code": location_code,
+            "language_code": language_code,
             "device": "desktop"
         }]
 
@@ -105,85 +120,44 @@ def get_people_also_search_for(keyword):
         st.error(f"❌ Error en la solicitud: {e}")
         return []
 
-# 🔹 **Panel de Administrador si accedes con `?admin=nbseo`**
-if admin_key == ADMIN_PASS:
-    st.title("🔐 Panel de Administrador")
+# ✅ Bloque principal del script
+if __name__ == "__main__":
+    # 🔹 Panel de Administrador si accedes con `?admin=nbseo`
+    if admin_key == ADMIN_PASS:
+        st.title("🔐 Panel de Administrador")
 
-    df_logs = get_all_search_history()
-    if df_logs.empty:
-        st.warning("⚠ No hay registros en la base de datos.")
-    else:
-        st.write("## 📜 Historial de Todas las Búsquedas")
-        st.dataframe(df_logs)
-
-    st.stop()  # Para evitar que el resto de la app se ejecute
-
-# 🔹 **Si accedes con `?related=1`, mostrar "People Also Search For"**
-elif related_key == "1":
-    st.title("🔍 People Also Search For")
-    keyword = st.text_input("Ingresar Keyword")
-
-    if st.button("🔍 Buscar") and keyword:
-        with st.spinner("Obteniendo términos relacionados..."):
-            results = get_people_also_search_for(keyword)
-            if results:
-                # ✅ Mostrar en una tabla en lugar de una lista desordenada
-                df = pd.DataFrame({"Términos relacionados": results})
-                st.dataframe(df)
-            else:
-                st.warning("⚠ No se encontraron términos relacionados.")
-
-    st.stop()
-
-# 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
-st.title("🔍 Google Knowledge Graph Explorer")
-st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.")
-
-# ✅ Entrada de búsqueda
-query = st.text_input("Ingresar Keyword")
-
-# ✅ Opciones de idioma
-language_options = {
-    "Español": "es",
-    "Inglés": "en",
-    "Francés": "fr",
-    "Alemán": "de",
-    "Italiano": "it"
-}
-selected_languages = [code for lang, code in language_options.items() if st.checkbox(f"Buscar en {lang}")]
-
-# ✅ Buscar en la API de Google Knowledge Graph
-if st.button("🔍 Buscar") and query:
-    with st.spinner("Buscando entidades..."):
-        results = []
-        for lang_code in selected_languages:
-            url = "https://kgsearch.googleapis.com/v1/entities:search"
-            params = {"query": query, "limit": 50, "key": GOOGLE_KG_API_KEY, "languages": lang_code}
-
-            try:
-                response = requests.get(url, params=params)
-                response.raise_for_status()
-
-                data = response.json()
-                for item in data.get("itemListElement", []):
-                    entity = item.get("result", {})
-                    results.append({
-                        "Nombre": entity.get("name", "N/A"),
-                        "Tipo": ", ".join(entity.get("@type", [])),
-                        "Descripción": entity.get("description", "N/A"),
-                        "Score": item.get("resultScore", 0),
-                        "Idioma": lang_code
-                    })
-
-                # Guardar la búsqueda en la base de datos
-                save_search(query, lang_code)
-
-            except requests.exceptions.RequestException as e:
-                st.error(f"❌ Error al conectar con la API: {e}")
-
-        # ✅ Mostrar resultados en tabla
-        if results:
-            st.write("### Resultados")
-            st.dataframe(pd.DataFrame(results))
+        df_logs = get_all_search_history()
+        if df_logs.empty:
+            st.warning("⚠ No hay registros en la base de datos.")
         else:
-            st.warning("⚠ No se encontraron entidades relacionadas.")
+            st.write("## 📜 Historial de Todas las Búsquedas")
+            st.dataframe(df_logs)
+
+        st.stop()
+
+    # 🔹 Si accedes con `?related=1`, mostrar "People Also Search For"
+    elif related_key == "1":
+        st.title("🔍 People Also Search For")
+
+        # 🔹 Selector de país
+        country = st.selectbox("Selecciona un país", list(country_location_codes.keys()), index=0)
+        location_code = country_location_codes[country]  # Obtener el código del país seleccionado
+
+        # 🔹 Selector de idioma
+        language = st.selectbox("Selecciona un idioma", list(language_options.keys()), index=0)
+        language_code = language_options[language]  # Obtener el código del idioma seleccionado
+
+        # 🔹 Campo para la keyword
+        keyword = st.text_input("Ingresar Keyword")
+
+        if st.button("🔍 Buscar") and keyword:
+            with st.spinner("Obteniendo términos relacionados..."):
+                results = get_people_also_search_for(keyword, location_code, language_code)
+                if results:
+                    # ✅ Mostrar en una tabla en lugar de una lista desordenada
+                    df = pd.DataFrame({"Términos relacionados": results})
+                    st.dataframe(df)
+                else:
+                    st.warning("⚠ No se encontraron términos relacionados.")
+
+        st.stop()
