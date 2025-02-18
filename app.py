@@ -8,7 +8,7 @@ import webbrowser
 # 🔹 Configuración de Google OAuth
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-REDIRECT_URI = os.getenv("REDIRECT_URI")  # Usa la URL pública de tu aplicación
+REDIRECT_URI = "https://knowledge-graph-api-entities.streamlit.app/"
 
 # 🔹 Ocultar el menú lateral por completo
 st.markdown(
@@ -43,6 +43,8 @@ st.title("🔑 Autenticación con Google")
 if "user" not in st.session_state:
     if st.button("🔑 Iniciar sesión con Google"):
         auth_url = login_with_google()
+        st.write("🔍 URL de autenticación generada:", auth_url)
+
         webbrowser.open_new(auth_url)  # 🔹 Abre la URL de autenticación en una nueva ventana
         st.stop()
 else:
