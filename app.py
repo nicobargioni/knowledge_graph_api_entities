@@ -139,10 +139,31 @@ elif related_key == "1":
 
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
-st.write("🔎 Ingresa una palabra clave para buscar información estructurada sobre entidades.\n\n"
+st.write("🔎 Ingresa una palabra clave para buscar sus entidades relacionadas según Knowledge Graph de Google.\n\n"
          "Google Knowledge Graph es una base de datos de entidades del mundo real, como personas, lugares y productos, que ayuda a comprender mejor el significado **semántico** de las búsquedas.\n\n"
          "Cada entidad tiene un **score** que indica su relevancia respecto a la keyword buscada.\n\n"
          "Los datos obtenidos aquí pueden utilizarse para reforzar interlinking y optimizar datos estructurados.")
+
+st.markdown("""
+### 🧠 Google Knowledge Graph: Explorador de Entidades 🔍  
+Google Knowledge Graph es una base de datos de entidades del mundo real, como **📌 personas, 🌎 lugares y 📦 productos**, que ayuda a comprender mejor el significado **semántico** de las búsquedas.
+
+---
+
+### 📊 ¿Qué es el *Score* de una entidad?  
+Cada entidad tiene un **📈 *score*** que indica su **relevancia** respecto a la keyword buscada:  
+✅ **Valores altos** → Entidad ampliamente reconocida.  
+⚠ **Valores bajos** → Entidad menos popular o con menos referencias.  
+
+---
+
+### 🛠 ¿Cómo puedes usar estos datos?  
+🔹 **SEO & Interlinking:** Encuentra relaciones entre entidades para mejorar el contenido.  
+🔹 **Datos estructurados (Schema Markup):** Mejora la visibilidad de tu web en Google.  
+🔹 **Análisis de tendencias:** Descubre qué entidades están más relacionadas con una keyword.  
+
+---
+""")
 
 # ✅ Entrada de búsqueda
 query = st.text_input("Ingresar Keyword")
