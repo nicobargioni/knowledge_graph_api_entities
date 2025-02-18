@@ -151,10 +151,10 @@ Cada entidad tiene un **📈 *score*** que indica su **relevancia** respecto a l
 
 ---
 
-### 🛠 ¿Cómo puedes usar estos datos?  
-🔹 **SEO & Interlinking:** Encuentra relaciones entre entidades para mejorar el contenido.  
-🔹 **Datos estructurados (Schema Markup):** Mejora la visibilidad de tu web en Google.  
-🔹 **Análisis de tendencias:** Descubre qué entidades están más relacionadas con una keyword.  
+### 🛠 ¿Cómo usar estos datos?  
+🔹 **SEO & Interlinking:** Encontrando relaciones entre entidades para mejorar el contenido.  
+🔹 **Datos estructurados:** Utilizando etiquedas se relación semántica para mejorar la visibilidad del sitio en nuevos contextos / mercados.  
+🔹 **Análisis de tendencias:** Se puede descubrir qué entidades están más relacionadas con una keyword en un momento determinado.  
 
 ---
 """)
