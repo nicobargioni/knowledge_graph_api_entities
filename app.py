@@ -11,14 +11,9 @@ st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
 # ✅ Obtener parámetros de la URL
-query_string = st.query_params.to_dict()
-admin_key = query_string.get("admin", "")
+query_params = st.query_params
+admin_key = query_params.get("admin", [""])[0] if query_params else ""
 
-# Si admin_key sigue vacío, intenta leerlo directamente desde la URL completa
-if not admin_key:
-    parsed_url = urllib.parse.urlparse(st.experimental_get_query_params())
-    query_params_dict = urllib.parse.parse_qs(parsed_url.query)
-    admin_key = query_params_dict.get("admin", [""])[0]
 
 st.write(f"🔍 Debug: admin_key = {admin_key}")
 
