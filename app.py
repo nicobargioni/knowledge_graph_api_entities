@@ -106,7 +106,8 @@ def get_people_also_search_for(keyword):
         return []
 
 # 🔹 **Panel de Administrador si accedes con `?admin=nbseo`**
-if admin_key == ADMIN_PASS:
+if admin_key.strip() == ADMIN_PASS.strip():
+
     st.title("🔐 Panel de Administrador")
 
     df_logs = get_all_search_history()
@@ -134,6 +135,10 @@ elif related_key == "1":
                 st.warning("⚠ No se encontraron términos relacionados.")
 
     st.stop()
+
+st.write(f"DEBUG: admin_key='{admin_key}' | ADMIN_PASS='{ADMIN_PASS}'")
+st.write(f"DEBUG: query_params={query_params}")
+
 
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
