@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import requests
+import requests  # ✅ Importar requests para hacer las peticiones HTTP
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
@@ -9,12 +9,10 @@ st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍
 # ✅ Obtener clave de admin desde Streamlit Secrets
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-# ✅ Obtener parámetros de la URL correctamente
+# ✅ Capturar parámetros de la URL correctamente
 query_params = st.query_params
-admin_key = query_params.get("admin", [""])[0] if query_params else ""
+admin_key = query_params.get("admin", "")
 
-# ✅ Debug para verificar la clave de admin
-st.write(f"🔍 Debug: admin_key = {admin_key}")
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
@@ -93,9 +91,11 @@ if st.button("🔍 Buscar") and query:
         for lang_code in selected_languages:
             url = "https://kgsearch.googleapis.com/v1/entities:search"
             params = {"query": query, "limit": 50, "key": st.secrets["GOOGLE_KG_API_KEY"], "languages": lang_code}
-            response = requests.get(url, params=params)
 
-            if response.status_code == 200:
+            try:
+                response = requests.get(url, params=params)
+                response.raise_for_status()  # ✅ Verificar si la API responde correctamente
+
                 data = response.json()
                 for item in data.get("itemListElement", []):
                     entity = item.get("result", {})
@@ -109,6 +109,9 @@ if st.button("🔍 Buscar") and query:
 
                 # ✅ Guardar búsqueda en la base de datos
                 save_search(query, lang_code)
+
+            except requests.exceptions.RequestException as e:
+                st.error(f"❌ Error al conectar con la API: {e}")
 
         # ✅ Mostrar resultados
         if results:
