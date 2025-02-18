@@ -12,6 +12,7 @@ ADMIN_PASS = st.secrets["ADMIN_PASS"]
 query_params = st.query_params
 admin_key = query_params.get("admin", [""])[0] if query_params else ""
 
+
 # ✅ Función para obtener TODAS las búsquedas (solo para admin)
 def get_all_search_history():
     try:

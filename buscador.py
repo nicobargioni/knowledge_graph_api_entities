@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import sqlite3
 from datetime import datetime
+import os
+
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
@@ -30,6 +32,10 @@ def initialize_db():
     conn.close()
 
 initialize_db()
+
+# ✅ Verificar si la base de datos existe, si no, crearla
+if not os.path.exists("search_logs.db"):
+    initialize_db()
 
 # ✅ Guardar búsqueda en la base de datos
 def save_search(query, language):
