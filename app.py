@@ -4,6 +4,9 @@ import pandas as pd
 import sqlite3
 from datetime import datetime
 import os
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
 
 # 🔹 Configuración inicial
 st.set_page_config(page_title="Google Knowledge Graph Explorer", initial_sidebar_state="collapsed")
@@ -14,6 +17,48 @@ st.markdown("""
         section[data-testid="stSidebar"] {display: none !important;}
     </style>
 """, unsafe_allow_html=True)
+
+
+# 🔹 Configuración de Google OAuth 2.0
+CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+REDIRECT_URI = "https://knowledge-graph-api-entities.streamlit.app/"  # Reemplázalo con la URL de tu app
+
+SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
+
+# 🔹 Función para iniciar sesión con Google
+def google_login():
+    flow = google_auth_oauthlib.flow.Flow.from_client_config(
+        {
+            "web": {
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uris": [REDIRECT_URI],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token"
+            }
+        },
+        scopes=SCOPES
+    )
+    flow.redirect_uri = REDIRECT_URI
+
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true"
+    )
+
+    return authorization_url
+
+# 🔹 Interfaz de usuario en Streamlit
+st.title("🔑 Iniciar sesión con Google")
+
+if "user" not in st.session_state:
+    if st.button("Iniciar sesión con Google"):
+        auth_url = google_login()
+        st.write(f"[Haz clic aquí para autenticarte]({auth_url})")
+else:
+    st.success(f"✅ Bienvenido {st.session_state['user']['name']}")
+    st.image(st.session_state["user"]["picture"], width=100)
 
 def get_user_ip():
     """ Obtiene la IP pública del usuario """
@@ -99,7 +144,7 @@ initialize_db()
 
 # ✅ **Acceso al Panel de Administrador**
 query_params = st.query_params
-is_admin = query_params.get("admin") == os.getenv("ADMIN_PASS")  # 🔴 Usa ?admin=nbseo en la URL
+is_admin = query_params.get("admin") == os.getenv("ADMIN_PASS")
 
 if is_admin:
     st.title("📊 Panel de Administrador")
