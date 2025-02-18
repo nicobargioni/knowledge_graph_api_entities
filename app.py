@@ -38,6 +38,17 @@ def initialize_db():
 # ✅ Asegurar que la base de datos exista
 initialize_db()
 
+# ✅ Función para registrar búsquedas en la base de datos
+def save_search(query, language):
+    try:
+        conn = sqlite3.connect("search_logs.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO searches (query, language) VALUES (?, ?)", (query, language))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"❌ Error al guardar la búsqueda: {e}")
+
 # ✅ Función para obtener TODAS las búsquedas (solo para admin)
 def get_all_search_history():
     try:
@@ -68,7 +79,7 @@ def get_people_also_search_for(keyword):
         }
 
         # 🔹 Endpoint de DataForSEO
-        url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced/?javascript"
+        url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
 
         # 🔹 Parámetros de la consulta
         payload = [{"keyword": keyword, "location_code": 2840, "language_code": "en", "device": "desktop"}]
@@ -168,6 +179,9 @@ if st.button("🔍 Buscar") and query:
                         "Score": item.get("resultScore", 0),
                         "Idioma": lang_code
                     })
+
+                # Guardar la búsqueda en la base de datos
+                save_search(query, lang_code)
 
             except requests.exceptions.RequestException as e:
                 st.error(f"❌ Error al conectar con la API: {e}")
