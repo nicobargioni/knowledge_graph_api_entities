@@ -1,10 +1,108 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import requests  # ✅ Importar requests para hacer las peticiones HTTP
+import requests
+import base64
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
+
+# ✅ Configurar la página
+st.set_page_config(page_title="People Also Search For", page_icon="🔍", layout="wide")
+
+# ✅ Obtener credenciales desde Streamlit Secrets
+DATAFORSEO_USERNAME = st.secrets["DATAFORSEO_USERNAME"]
+DATAFORSEO_PASSWORD = st.secrets["DATAFORSEO_PASSWORD"]
+
+# ✅ Capturar parámetros de la URL correctamente
+query_params = st.query_params
+related_key = query_params.get("related", "")
+
+# 🔐 Solo permitir acceso con `?related=true`
+if related_key.lower() != "true":
+    st.error("❌ Acceso no autorizado.")
+    st.stop()
+
+# ✅ Función para hacer la solicitud a DataForSEO
+def get_people_also_search_for(keyword):
+    """Consulta a la API de DataForSEO para obtener 'People Also Search For'."""
+    try:
+        # 🔹 Configurar autenticación en Base64
+        credentials = f"{DATAFORSEO_USERNAME}:{DATAFORSEO_PASSWORD}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+
+        # 🔹 Headers de la petición
+        headers = {
+            "Authorization": f"Basic {encoded_credentials}",
+            "Content-Type": "application/json"
+        }
+
+        # 🔹 Endpoint de DataForSEO
+        url = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced/?javascript"
+
+        # 🔹 Parámetros de la consulta
+        payload = [
+            {
+                "keyword": keyword,
+                "location_code": 2840,  # Código de ubicación (EE.UU. por defecto)
+                "language_code": "en",
+                "device": "desktop"
+            }
+        ]
+
+        # 🔹 Realizar la solicitud
+        response = requests.post(url, headers=headers, json=payload)
+
+        # 🔹 Manejo de errores
+        if response.status_code != 200:
+            st.error(f"❌ Error en la API: {response.status_code} - {response.text}")
+            return []
+
+        # 🔹 Extraer datos
+        data = response.json()
+        return extract_related_searches(data)
+
+    except Exception as e:
+        st.error(f"❌ Error en la solicitud: {e}")
+        return []
+
+# ✅ Función para extraer 'People Also Search For'
+def extract_related_searches(data):
+    """Procesa la respuesta de DataForSEO y extrae los términos relacionados."""
+    related_searches = []
+    
+    try:
+        results = data.get("tasks", [])[0].get("result", [])
+        for result in results:
+            if "items" in result:
+                for item in result["items"]:
+                    if "people_also_search" in item:
+                        for related in item["people_also_search"]:
+                            related_searches.append(related["title"])
+
+    except Exception as e:
+        st.error(f"❌ Error al extraer datos: {e}")
+
+    return related_searches
+
+# ✅ Interfaz de la Página
+st.title("🔍 People Also Search For")
+st.write("🔎 Ingresa una palabra clave para ver términos relacionados.")
+
+# ✅ Entrada de palabra clave
+keyword = st.text_input("Ingresar Keyword")
+
+# ✅ Botón de búsqueda
+if st.button("🔍 Buscar") and keyword:
+    with st.spinner("Obteniendo términos relacionados..."):
+        related_results = get_people_also_search_for(keyword)
+
+        if related_results:
+            st.write("### Resultados:")
+            for term in related_results:
+                st.write(f"- {term}")
+        else:
+            st.warning("⚠ No se encontraron términos relacionados.")
 
 # ✅ Obtener clave de admin desde Streamlit Secrets
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
