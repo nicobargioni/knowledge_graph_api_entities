@@ -5,7 +5,6 @@ import pandas as pd
 import requests
 import json
 import base64
-import response
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
 
@@ -111,8 +110,7 @@ def get_people_also_search_for(keyword):
         return []
     
 st.write(f"admin_key capturado: {admin_key}")
-st.write(response.status_code)
-st.write(response.json())
+
 
 # 🔹 **Si accedes con `?admin=nbseo`, mostrar el Panel de Administrador**
 if admin_key == ADMIN_PASS:
