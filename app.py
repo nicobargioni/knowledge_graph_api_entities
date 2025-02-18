@@ -139,10 +139,6 @@ elif related_key == "1":
 
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
-st.write("🔎 Ingresa una palabra clave para buscar sus entidades relacionadas según Knowledge Graph de Google.\n\n"
-         "Google Knowledge Graph es una base de datos de entidades del mundo real, como personas, lugares y productos, que ayuda a comprender mejor el significado **semántico** de las búsquedas.\n\n"
-         "Cada entidad tiene un **score** que indica su relevancia respecto a la keyword buscada.\n\n"
-         "Los datos obtenidos aquí pueden utilizarse para reforzar interlinking y optimizar datos estructurados.")
 
 st.markdown("""
 ### 🧠 Google Knowledge Graph: Explorador de Entidades 🔍  
