@@ -140,9 +140,7 @@ elif related_key == "1":
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
 
-st.markdown("""
-### 🧠 Google Knowledge Graph: Explorador de Entidades 🔍  
-Google Knowledge Graph es una base de datos de entidades del mundo real, como **📌 personas, 🌎 lugares y 📦 productos**, que ayuda a comprender mejor el significado **semántico** de las búsquedas.
+st.markdown("""Google Knowledge Graph es una base de datos de entidades del mundo real, como **📌 personas, 🌎 lugares y 📦 productos**, que ayuda a comprender mejor el significado **semántico** de las búsquedas.
 
 ---
 
