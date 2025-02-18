@@ -136,9 +136,6 @@ elif related_key == "1":
 
     st.stop()
 
-st.write(f"DEBUG: admin_key='{admin_key}' | ADMIN_PASS='{ADMIN_PASS}'")
-st.write(f"DEBUG: query_params={query_params}")
-
 
 # 🔹 **Si no hay `?admin=...` ni `?related=1`, mostrar el buscador normal**
 st.title("🔍 Google Knowledge Graph Explorer")
