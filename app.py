@@ -31,6 +31,9 @@ def initialize_db():
 
 initialize_db()
 
+if not os.path.exists("search_logs.db"):
+    initialize_db()
+
 # ✅ Guardar búsqueda en la base de datos
 def save_search(query, language):
     conn = sqlite3.connect("search_logs.db")
