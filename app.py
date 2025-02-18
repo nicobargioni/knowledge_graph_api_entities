@@ -97,19 +97,22 @@ def get_people_also_search_for(keyword):
 
         # 🔹 Extraer datos
         related_searches = []
-        results = response.get("tasks", [])[0].get("result", [])
-        for result in results:
-            if "items" in result:
-                for item in result["items"]:
-                    if "people_also_search" in item:
-                        for related in item["people_also_search"]:
-                            related_searches.append(related["title"])
+        tasks = response.get("tasks", [])
+        if tasks:
+            results = tasks[0].get("result", [])
+            for result in results:
+                items = result.get("items", [])
+                for item in items:
+                    # ✅ Si el item es de tipo "people_also_search", extraer sus términos
+                    if item.get("type") == "people_also_search" and "items" in item:
+                        related_searches.extend(item["items"])  # Extrae la lista de términos
 
         return related_searches
 
     except Exception as e:
         st.error(f"❌ Error en la solicitud: {e}")
         return []
+
 
 
 # 🔹 **Si accedes con `?admin=nbseo`, mostrar el Panel de Administrador**
