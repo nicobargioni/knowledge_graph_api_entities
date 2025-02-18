@@ -10,6 +10,18 @@ CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")  # Usa la URL pública de tu aplicación
 
+# 🔹 Ocultar el menú lateral por completo
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebarNav"] {
+            display: none !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # ✅ Validación de configuración
 if not CLIENT_ID or not CLIENT_SECRET:
     st.error("⚠️ CLIENT_ID o CLIENT_SECRET no están configurados.")
