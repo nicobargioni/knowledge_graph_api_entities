@@ -1,7 +1,6 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import urllib.parse
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Historial de Búsquedas", page_icon="📖", layout="wide")
@@ -10,15 +9,8 @@ st.set_page_config(page_title="Historial de Búsquedas", page_icon="📖", layou
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
 # ✅ Obtener parámetros de la URL correctamente
-query_string = st.query_params.to_dict()
-admin_key = query_string.get("admin", "")
-
-# Si `admin_key` sigue vacío, leerlo manualmente desde la URL
-if not admin_key:
-    url = st.experimental_get_url()
-    parsed_url = urllib.parse.urlparse(url)
-    query_params_dict = urllib.parse.parse_qs(parsed_url.query)
-    admin_key = query_params_dict.get("admin", [""])[0]
+query_params = st.query_params
+admin_key = query_params.get("admin", [""])[0] if query_params else ""
 
 # ✅ Función para obtener TODAS las búsquedas (solo para admin)
 def get_all_search_history():
