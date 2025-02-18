@@ -1,8 +1,6 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import requests
-import urllib
 
 # ✅ Configurar la página
 st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍", layout="wide")
@@ -10,13 +8,12 @@ st.set_page_config(page_title="Google Knowledge Graph Explorer", page_icon="🔍
 # ✅ Obtener clave de admin desde Streamlit Secrets
 ADMIN_PASS = st.secrets["ADMIN_PASS"]
 
-# ✅ Obtener parámetros de la URL
+# ✅ Obtener parámetros de la URL correctamente
 query_params = st.query_params
 admin_key = query_params.get("admin", [""])[0] if query_params else ""
 
-
+# ✅ Debug para verificar la clave de admin
 st.write(f"🔍 Debug: admin_key = {admin_key}")
-
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
@@ -56,7 +53,7 @@ def get_all_search_history():
         return df if not df.empty else pd.DataFrame(columns=["query", "language", "timestamp"])
     except Exception as e:
         st.error(f"❌ Error al acceder a la base de datos: {e}")
-        return pd.DataFrame(columns=["query", "language", "timestamp"])  # Retorna un DataFrame vacío en caso de error
+        return pd.DataFrame(columns=["query", "language", "timestamp"])
 
 # 🔐 Si accedes con `?admin=clave`, muestra el Panel de Administrador
 if str(admin_key).strip() == str(ADMIN_PASS).strip():
