@@ -15,9 +15,11 @@ DATAFORSEO_PASSWORD = st.secrets.get("DATAFORSEO_PASSWORD", "")
 GOOGLE_KG_API_KEY = st.secrets.get("GOOGLE_KG_API_KEY", "")
 
 # ✅ Capturar parámetros de la URL
-query_params = st.query_params
-admin_key = query_params.get("admin", [""])[0] if query_params else ""
+query_params = st.query_params.to_dict()
+admin_key = query_params.get("admin", [""])[0] if "admin" in query_params else ""
 related_key = query_params.get("related", [""])[0] if query_params else ""
+
+
 
 # ✅ Función para inicializar la base de datos
 def initialize_db():
